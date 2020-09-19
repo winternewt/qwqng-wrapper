@@ -1,0 +1,5 @@
+cmake_minimum_required(VERSION 3.10)
+project(qwqng-wrapper)
+add_library(qwqng-wrapper SHARED qwqng-wrapper.cpp)
+find_library(QWQNG_LIBRARY NAMES qwqng PATHS /usr/local/lib /usr/local/lib64)
+target_link_libraries(qwqng-wrapper ${QWQNG_LIBRARY})
