@@ -1,4 +1,5 @@
 /*
+ * Copyright (c) 2020 Newton Winter
  * Copyright (c) 2020 Andika Wasisto
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -21,55 +22,116 @@
  */
 
 #include <qwqng.hpp>
+#include <stdint.h>
+#include <pthread.h>
+
+//global
+char* __buffer; 
+char* __buffer_long; 
+pthread_mutex_t __lock;
+
+
+static void __attribute__((constructor)) con() {
+  //init
+  __buffer = new char[FTDIDEVICE_MAX_ARRAY_SIZE_];
+  __buffer_long = NULL;
+  pthread_mutex_init(&lock, NULL);
+}
+static void __attribute__((destructor)) des() {
+  pthread_mutex_destroy(&lock);
+  delete[] __buffer;
+  (__buffer_long != NULL ) && delete[] __buffer_long;
+}
+
 
 extern "C" {
-    QWQNG* GetQwqngInstance()
+    QWQNG* GetQwqngInstance() // create class instance
     {
+        pthread_mutex_lock(&lock);
         return new QWQNG();
+		pthread_mutex_unlock(&lock);
     }
-
-    int RandInt32(QWQNG *qwqng)
+    
+	/* Get random 32 bit integer as long */
+    int32_t RandInt32(QWQNG *qwqng)
     {
-        int x;
-        qwqng->RandInt32((long*) &x);
+        int32_t x;
+        pthread_mutex_lock(&lock);
+		qwqng->RandInt32((long*)&x);
+		pthread_mutex_unlock(&lock);
         return x;
     }
 
+	/* Get random uniform number [0,1) as double */
     double RandUniform(QWQNG *qwqng)
     {
         double x;
+		pthread_mutex_lock(&lock);
         qwqng->RandUniform(&x);
+		pthread_mutex_unlock(&lock);
         return x;
     }
-
+	
+	/* Get random normal number with mean zero and SD one as double */
     double RandNormal(QWQNG *qwqng)
     {
         double x;
-        qwqng->RandNormal(&x);
+        pthread_mutex_lock(&lock);
+		qwqng->RandNormal(&x);
+		pthread_mutex_unlock(&lock);
         return x;
     }
-
-    char* RandBytes(QWQNG *qwqng, int length)
+	
+	/* Get unlimited random bytes */
+    char* RandBytes(QWQNG *qwqng, int32_t length)
     {
-        char* bytes = new char[length];
-        qwqng->RandBytes(bytes, length);
-        return bytes;
+        int32_t blocks;
+		int32_t rem;
+		blocks = length / FTDIDEVICE_MAX_ARRAY_SIZE_;
+		pthread_mutex_lock(&lock);
+		
+		__buffer_long && delete[] __buffer_long;
+		__buffer_long = new char[length];
+		for ( rem = 0; rem < blocks; rem++) {
+			qwqng->RandBytes(__buffer, FTDIDEVICE_MAX_ARRAY_SIZE_);	
+			memcpy ( __buffer_long+FTDIDEVICE_MAX_ARRAY_SIZE_*rem, __buffer, FTDIDEVICE_MAX_ARRAY_SIZE_ );
+		}
+		rem = length % FTDIDEVICE_MAX_ARRAY_SIZE_;		
+		memcpy ( __buffer_long+FTDIDEVICE_MAX_ARRAY_SIZE_*blocks, __buffer, rem );
+		pthread_mutex_unlock(&lock);
+		return __buffer_long;
     }
-
+    
+	/* Print open device serial number */
     char* DeviceID(QWQNG *qwqng)
     {
-        char* SerialNumber;
+		char* SerialNumber;
         SerialNumber = qwqng->DeviceID();
         return SerialNumber;
     }
-
-    void Clear(QWQNG *qwqng)
+    
+	/* Print open device serial number */
+	char* StatusString(QWQNG *qwqng)
     {
-        qwqng->Clear();
+		char* statusString; 
+		statusString = qwqng->StatusString();
+        return statusString;
     }
-
+ 
+	/* Clear internal buffers */
+    void Clear(QWQNG *qwqng)
+    {    
+		pthread_mutex_lock(&lock);
+		if ( qwqng->Clear() != S_OK ) 
+			qwqng->Reset();
+		pthread_mutex_unlock(&lock);
+    }
+	
+	/* Reset Device */
     void Reset(QWQNG *qwqng)
     {
-        qwqng->Reset();
+        pthread_mutex_lock(&lock);
+		qwqng->Reset();
+		pthread_mutex_unlock(&lock);
     }
 }
