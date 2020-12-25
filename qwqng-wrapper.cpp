@@ -47,9 +47,7 @@ static void __attribute__((destructor)) des() {
 extern "C" {
     QWQNG* GetQwqngInstance() // create class instance
     {
-        pthread_mutex_lock(&__lock);
         return new QWQNG();
-		pthread_mutex_unlock(&__lock);
     }
     
 	/* Get random 32 bit integer as long */
