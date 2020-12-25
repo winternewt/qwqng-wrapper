@@ -35,30 +35,30 @@ static void __attribute__((constructor)) con() {
   //init
   __buffer = new char[FTDIDEVICE_MAX_ARRAY_SIZE_];
   __buffer_long = NULL;
-  pthread_mutex_init(&lock, NULL);
+  pthread_mutex_init(&__lock, NULL);
 }
 static void __attribute__((destructor)) des() {
-  pthread_mutex_destroy(&lock);
+  pthread_mutex_destroy(&__lock);
   delete[] __buffer;
-  (__buffer_long != NULL ) && delete[] __buffer_long;
+  __buffer_long && (delete[] __buffer_long, __buffer_long = NULL);
 }
 
 
 extern "C" {
     QWQNG* GetQwqngInstance() // create class instance
     {
-        pthread_mutex_lock(&lock);
+        pthread_mutex_lock(&__lock);
         return new QWQNG();
-		pthread_mutex_unlock(&lock);
+		pthread_mutex_unlock(&__lock);
     }
     
 	/* Get random 32 bit integer as long */
     int32_t RandInt32(QWQNG *qwqng)
     {
         int32_t x;
-        pthread_mutex_lock(&lock);
+        pthread_mutex_lock(&__lock);
 		qwqng->RandInt32((long*)&x);
-		pthread_mutex_unlock(&lock);
+		pthread_mutex_unlock(&__lock);
         return x;
     }
 
@@ -66,9 +66,9 @@ extern "C" {
     double RandUniform(QWQNG *qwqng)
     {
         double x;
-		pthread_mutex_lock(&lock);
+		pthread_mutex_lock(&__lock);
         qwqng->RandUniform(&x);
-		pthread_mutex_unlock(&lock);
+		pthread_mutex_unlock(&__lock);
         return x;
     }
 	
@@ -76,9 +76,9 @@ extern "C" {
     double RandNormal(QWQNG *qwqng)
     {
         double x;
-        pthread_mutex_lock(&lock);
+        pthread_mutex_lock(&__lock);
 		qwqng->RandNormal(&x);
-		pthread_mutex_unlock(&lock);
+		pthread_mutex_unlock(&__lock);
         return x;
     }
 	
@@ -88,9 +88,8 @@ extern "C" {
         int32_t blocks;
 		int32_t rem;
 		blocks = length / FTDIDEVICE_MAX_ARRAY_SIZE_;
-		pthread_mutex_lock(&lock);
-		
-		__buffer_long && delete[] __buffer_long;
+		pthread_mutex_lock(&__lock);
+		__buffer_long && (delete[] __buffer_long, __buffer_long = NULL);
 		__buffer_long = new char[length];
 		for ( rem = 0; rem < blocks; rem++) {
 			qwqng->RandBytes(__buffer, FTDIDEVICE_MAX_ARRAY_SIZE_);	
@@ -98,7 +97,7 @@ extern "C" {
 		}
 		rem = length % FTDIDEVICE_MAX_ARRAY_SIZE_;		
 		memcpy ( __buffer_long+FTDIDEVICE_MAX_ARRAY_SIZE_*blocks, __buffer, rem );
-		pthread_mutex_unlock(&lock);
+		pthread_mutex_unlock(&__lock);
 		return __buffer_long;
     }
     
@@ -121,17 +120,17 @@ extern "C" {
 	/* Clear internal buffers */
     void Clear(QWQNG *qwqng)
     {    
-		pthread_mutex_lock(&lock);
+		pthread_mutex_lock(&__lock);
 		if ( qwqng->Clear() != S_OK ) 
 			qwqng->Reset();
-		pthread_mutex_unlock(&lock);
+		pthread_mutex_unlock(&__lock);
     }
 	
 	/* Reset Device */
     void Reset(QWQNG *qwqng)
     {
-        pthread_mutex_lock(&lock);
+        pthread_mutex_lock(&__lock);
 		qwqng->Reset();
-		pthread_mutex_unlock(&lock);
+		pthread_mutex_unlock(&__lock);
     }
 }
