@@ -56,6 +56,13 @@ extern "C" {
         return bytes;
     }
 
+    char* DeviceID(QWQNG *qwqng)
+    {
+        char* SerialNumber;
+        SerialNumber = qwqng->DeviceID();
+        return SerialNumber;
+    }
+
     void Clear(QWQNG *qwqng)
     {
         qwqng->Clear();
