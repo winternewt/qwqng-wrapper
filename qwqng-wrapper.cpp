@@ -24,6 +24,7 @@
 #include <qwqng.hpp>
 #include <stdint.h>
 #include <pthread.h>
+#include <time.h>
 
 //global
 char* __buffer; 
@@ -94,6 +95,7 @@ extern "C" {
 			memcpy ( __buffer_long+FTDIDEVICE_MAX_ARRAY_SIZE_*rem, __buffer, FTDIDEVICE_MAX_ARRAY_SIZE_ );
 		}
 		rem = length % FTDIDEVICE_MAX_ARRAY_SIZE_;		
+		qwqng->RandBytes(__buffer, rem);	
 		memcpy ( __buffer_long+FTDIDEVICE_MAX_ARRAY_SIZE_*blocks, __buffer, rem );
 		pthread_mutex_unlock(&__lock);
 		return __buffer_long;
